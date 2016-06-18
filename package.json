@@ -1,0 +1,22 @@
+{
+  "name": "spotiflight",
+  "version": "0.0.1",
+  "description": "Wrapper for the Spotify web client (with background playback!)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imnofox/spotiflight.git"
+  },
+  "author": "imnofox <lachlan@imnofox.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/imnofox/spotiflight/issues"
+  },
+  "homepage": "https://github.com/imnofox/spotiflight",
+  "devDependencies": {
+    "electron-prebuilt": "^1.2.0"
+  }
+}
