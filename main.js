@@ -7,7 +7,7 @@ const BrowserWindow = electron.BrowserWindow
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow = null
 let appIcon = null
-let shouldQuit = true
+let shouldQuit = false
 
 let pluginName
 switch (process.platform) {
@@ -45,16 +45,23 @@ function createWindow() {
   appIcon.setToolTip("Spotiflight")
   appIcon.on("click", (e) => {
     if (mainWindow.isVisible()) {
-        mainWindow.hide()
+      mainWindow.hide()
     } else {
       mainWindow.show()
     }
   })
-  const contextMenu = electron.Menu.buildFromTemplate([
-    {label: 'Quit', click() {
+  const contextMenu = electron.Menu.buildFromTemplate([{
+    label: 'Now Playing: Cool SOng #1',
+    enabled: false
+  }, {
+    type: 'separator'
+  }, {
+    label: 'Quit',
+    click() {
+      shouldQuit = true
       mainWindow.close()
-    }}
-  ]);
+    }
+  }]);
   appIcon.setContextMenu(contextMenu);
 
   // Emitted when the window is closed.
