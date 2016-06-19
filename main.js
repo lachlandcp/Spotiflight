@@ -160,27 +160,35 @@ function createWindow() {
   })
 }
 
-ipcMain.on("set-track", (event, arg) => {
+let updateTrack = () => {
+  player.metadata = {
+    'mpris:trackid': player.objectPath('track/0'),
+    'mpris:length': activeTrack.time * 1000 * 1000, // In microseconds
+    'mpris:artUrl': activeTrack.art,
+    'xesam:title': activeTrack.track,
+    'xesam:artist': activeTrack.artist
+  }
+
+  player.playbackStatus = (activeTrack.isPaused ? "Paused" : "Playing")
+
+  appIcon.setContextMenu(getContextMenu())
+
+  console.log(activeTrack)
+}
+
+let setTrack = (arg) => {
   if ((activeTrack.track != arg.track && activeTrack.artist != arg.artist && activeTrack.art != arg.art && activeTrack.time != arg.time) || activeTrack.isPaused != arg.isPaused) {
     activeTrack.track = arg.track
     activeTrack.artist = arg.artist
     activeTrack.isPaused = arg.isPaused
     activeTrack.art = arg.art
     activeTrack.time = arg.time
-
-    player.metadata = {
-    	'mpris:trackid': player.objectPath('track/0'),
-    	'mpris:length': activeTrack.time * 1000 * 1000, // In microseconds
-    	'mpris:artUrl': activeTrack.art,
-    	'xesam:title': activeTrack.track,
-    	'xesam:artist': activeTrack.artist
-    }
-
-    player.playbackStatus = (activeTrack.isPaused ? "Paused" : "Playing")
-
-    appIcon.setContextMenu(getContextMenu())
+    updateTrack()
   }
-  console.log(activeTrack)
+}
+
+ipcMain.on("set-track", (event, arg) => {
+  setTrack(arg)
 })
 
 // This method will be called when Electron has finished
@@ -211,8 +219,12 @@ app.on('activate', function() {
 function playback(action) {
   if (action == "pause" && !activeTrack.isPaused) {
     webContents.send("pause")
+    activeTrack.isPaused = true
+    updateTrack()
   } else if (action == "play" && activeTrack.isPaused) {
     webContents.send("play")
+    activeTrack.isPaused = false
+    updateTrack()
   } else if (action =="next") {
     webContents.send("next")
   } else if (action =="prev") {
