@@ -11,7 +11,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="icon.svg">
+   sodipodi:docname="icon.svg"
+   inkscape:export-filename="/home/lachlan/Projects/Node/Spotiflight/assets/icon.png"
+   inkscape:export-xdpi="720"
+   inkscape:export-ydpi="720">
   <metadata
      id="metadata9">
     <rdf:RDF>
@@ -38,7 +41,7 @@
      id="namedview7"
      showgrid="false"
      inkscape:zoom="16.867288"
-     inkscape:cx="28.026221"
+     inkscape:cx="27.314785"
      inkscape:cy="17.762984"
      inkscape:window-x="0"
      inkscape:window-y="0"

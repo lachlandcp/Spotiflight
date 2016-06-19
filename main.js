@@ -1,13 +1,21 @@
-const electron = require('electron')
+const electron = require("electron")
+const Player = require("mpris-service")
 const path = require("path")
-const app = electron.app
-const BrowserWindow = electron.BrowserWindow
+const fs = require("fs")
+const {BrowserWindow, Menu, MenuItem, app, ipcMain} = electron
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow = null
-let appIcon = null
+let mainWindow, appIcon, webContents = null
 let shouldQuit = false
+
+let activeTrack = {
+  track: "",
+  artist: "",
+  art: "",
+  time: 0, // seconds
+  isPaused: true
+}
 
 let pluginName
 switch (process.platform) {
@@ -23,6 +31,83 @@ switch (process.platform) {
 }
 app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname, pluginName))
 
+let getContextMenu = () => {
+  let menu = new electron.Menu()
+
+  if (activeTrack.track) {
+    menu.append(new MenuItem({
+      label: activeTrack.track + " by " + activeTrack.artist,
+      enabled: false
+    }))
+
+    menu.append(new MenuItem({
+      type: "separator"
+    }))
+
+    menu.append(new MenuItem({
+      label: (activeTrack.isPaused ? "Play" : "Pause"),
+      click() {
+        playback("toggle")
+      }
+    }))
+
+    menu.append(new MenuItem({
+      label: "Next",
+      click() {
+        playback("next")
+      }
+    }))
+
+    menu.append(new MenuItem({
+      label: "Previous",
+      click() {
+        playback("prev")
+      }
+    }))
+
+    menu.append(new MenuItem({
+      type: "separator"
+    }))
+  }
+  menu.append(new electron.MenuItem({
+    label: "Quit",
+    click() {
+      shouldQuit = true
+      mainWindow.close()
+    }
+  }))
+
+  return menu
+}
+
+let player = Player({
+	name: 'Spotiflight',
+	identity: 'Spotiflight',
+	supportedInterfaces: ['player'],
+  canSeek: false
+});
+player.canSeek = false
+
+player.on("play", () => {
+  playback("play")
+})
+
+player.on("pause", () => {
+  playback("pause")
+})
+
+player.on("playpause", () => {
+  playback("toggle")
+})
+
+player.on("next", () => {
+  playback("next")
+})
+
+player.on("previous", () => {
+  playback("prev")
+})
+
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -34,9 +119,12 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       plugins: true,
-      allowDisplayingInsecureContent: true
+      allowDisplayingInsecureContent: true,
+      preload: path.join(__dirname, "src/main.js")
     }
   })
+
+  webContents = mainWindow.webContents
 
   // and load the index.html of the app.
   mainWindow.loadURL(`https://play.spotify.com`)
@@ -50,19 +138,7 @@ function createWindow() {
       mainWindow.show()
     }
   })
-  const contextMenu = electron.Menu.buildFromTemplate([{
-    label: 'Now Playing: Cool SOng #1',
-    enabled: false
-  }, {
-    type: 'separator'
-  }, {
-    label: 'Quit',
-    click() {
-      shouldQuit = true
-      mainWindow.close()
-    }
-  }]);
-  appIcon.setContextMenu(contextMenu);
+  appIcon.setContextMenu(getContextMenu())
 
   // Emitted when the window is closed.
   mainWindow.on('closed', (e) => {
@@ -83,6 +159,29 @@ function createWindow() {
     e.preventDefault()
   })
 }
+
+ipcMain.on("set-track", (event, arg) => {
+  if ((activeTrack.track != arg.track && activeTrack.artist != arg.artist && activeTrack.art != arg.art && activeTrack.time != arg.time) || activeTrack.isPaused != arg.isPaused) {
+    activeTrack.track = arg.track
+    activeTrack.artist = arg.artist
+    activeTrack.isPaused = arg.isPaused
+    activeTrack.art = arg.art
+    activeTrack.time = arg.time
+
+    player.metadata = {
+    	'mpris:trackid': player.objectPath('track/0'),
+    	'mpris:length': activeTrack.time * 1000 * 1000, // In microseconds
+    	'mpris:artUrl': activeTrack.art,
+    	'xesam:title': activeTrack.track,
+    	'xesam:artist': activeTrack.artist
+    }
+
+    player.playbackStatus = (activeTrack.isPaused ? "Paused" : "Playing")
+
+    appIcon.setContextMenu(getContextMenu())
+  }
+  console.log(activeTrack)
+})
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -108,3 +207,21 @@ app.on('activate', function() {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+function playback(action) {
+  if (action == "pause" && !activeTrack.isPaused) {
+    webContents.send("pause")
+  } else if (action == "play" && activeTrack.isPaused) {
+    webContents.send("play")
+  } else if (action =="next") {
+    webContents.send("next")
+  } else if (action =="prev") {
+    webContents.send("prev")
+  } else if (action == "toggle") {
+    if (activeTrack.isPaused) {
+      playback("play")
+    } else {
+      playback("pause")
+    }
+  }
+}

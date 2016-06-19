@@ -18,5 +18,8 @@
   "homepage": "https://github.com/imnofox/spotiflight",
   "devDependencies": {
     "electron-prebuilt": "^1.2.0"
+  },
+  "dependencies": {
+    "mpris-service": "^1.1.1"
   }
 }

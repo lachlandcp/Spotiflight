@@ -1,0 +1,6 @@
+#now-playing-widgets {
+  display: none;
+}
+#now-playing:focus {
+  outline: none !important;
+}
